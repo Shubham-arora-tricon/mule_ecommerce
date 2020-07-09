@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:sns="http://www.mulesoft.org/schema/mule/sns" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:s3="http://www.mulesoft.org/schema/mule/s3" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sns http://www.mulesoft.org/schema/mule/sns/current/mule-sns.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <apikit:config name="e-commerce-config" api="e-commerce.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0f2594c5-83b9-4782-944f-b55e1c6ea371" basePath="/api/v1" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<s3:config name="Amazon_S3_Configuration" doc:name="Amazon S3 Configuration" doc:id="2a8f7f63-ec00-49f0-8a27-4c22a0c48afb" >
+		<s3:basic-connection accessKey="AWS_ACCESS_KEY" secretKey="AWS_SECRET_KEY" tryDefaultAWSCredentialsProviderChain="true" region="AP_SOUTH_1" />
+	</s3:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="2f83c94b-8613-4931-8e81-75e2ce3d9a8d" file="aws-s3.yaml" />
+	<sns:config name="Amazon_SNS_configuration" doc:name="Amazon SNS configuration" doc:id="a64b1c5d-2e01-480f-94ea-14c8eaa9bfe4" >
+		<sns:basic-connection testTopic="arn:aws:sns:ap-south-1:373255439821:Order-Ecommerce-Mule-ap-south" accessKey="AWS_ACCESS_KEY" secretKey="AWS_SECRET_KEY" tryDefaultAWSCredentialsProviderChain="true" region="AP_SOUTH_1" />
+	</sns:config>
+	<flow name="e-commerce-main">
+        <http:listener config-ref="HTTP_Listener_config" path="/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="e-commerce-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="e-commerce-console">
+        <http:listener config-ref="HTTP_Listener_config" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="e-commerce-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\order:application\json:e-commerce-config">
+        <s3:create-object doc:name="put Order obejct in S3" doc:id="8327f822-fe9c-442f-9e83-f67008015811" config-ref="Amazon_S3_Configuration" bucketName="${bucket}" key="#[payload.orderId]" contentType="application/json" target="orderId" targetValue="#[payload.orderId]"/>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="68f83443-e2c1-492e-8044-162091b29872">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "The order has been properly entered with id: " ++ payload.orderId
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+	<flow name="e-commerceFlow" doc:id="2eace939-f5ee-479e-807b-62c8bc287db9" >
+		<s3:new-object-trigger doc:name="On New Order" doc:id="c8e41e3f-c76a-48dd-9ba4-4ab1b6204852" config-ref="Amazon_S3_Configuration" bucketName="${bucket}">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</s3:new-object-trigger>
+		<logger level="INFO" doc:name="Logger" doc:id="4eba29c2-4909-4a11-826e-46e8a0979cda" message="This is payload #[payload]"/>
+		<s3:get-object doc:name="Get order" doc:id="4a17ea97-06e7-4b20-ba1f-44b30bc733c3" config-ref="Amazon_S3_Configuration" bucketName="${bucket}" key="#[payload.key]" outputMimeType="application/json"/>
+		<logger level="INFO" doc:name="Logger" doc:id="13f87f43-2e27-46ae-bf07-0adc9378e3dd" message="File is in Binary form"/>
+		<ee:transform doc:name="Transform Message" doc:id="e2beb7b0-9d32-4cb0-86eb-3692410eabe2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="87125c0b-e061-435d-8d58-2e52318839a3" message="Transformed message is : #[payload]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="ee1cfcea-f0da-49b7-b4f1-ec5c8daff027" name="e-commerceSub_Flow" target="payload"/>
+	</flow>
+	<sub-flow name="e-commerceSub_Flow" doc:id="355c0536-1ad3-4055-84c6-80faad05a6c0" >
+		<logger level="INFO" doc:name="Logger" doc:id="48954e55-0b77-409a-978a-7ad04d5675bb" message="Sub flow with payload #[payload]"/>
+		<set-variable value="${tax}" doc:name="Set Tax" doc:id="246601fb-4605-4cfa-b341-582796122618" variableName="tax"/>
+		<set-variable value="${discount}" doc:name="Set discount variable" doc:id="9c1bcd9b-2690-45fb-ae05-4b9d4d169f3b" variableName="discount"/>
+		<ee:transform doc:name="Transform Message" doc:id="0f00efd2-cd67-4ca9-b4a6-bb287bd7ac8f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+var total = payload.orderLineItems reduce (n, total = 0) -> total + (n.qty * n.unitPrice)
+var discount1 = total * (vars.discount as Number) /100
+var tax1 = (total - discount1) * (vars.tax as Number) / 100
+var finalAmount1 = total - discount1 + tax1
+output application/json
+---
+{
+	orderId: payload.orderId,
+	customerId: payload.customerId,
+	totalAmount: 100 as Number,
+	discount: discount1,
+	tax: tax1,
+	total1: total,
+	finalAmount: finalAmount1,
+	saved : total-finalAmount1
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b6c0a45d-105d-4485-8aea-9b2eeb014703" message="payload of invoice is #[payload]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="7e46b1b5-a88c-4949-a144-a279a23ef573" name="e-commerceSub_Flow1" target="payload"/>
+	</sub-flow>
+	<sub-flow name="e-commerceSub_Flow1" doc:id="d3b21dff-89ba-4edd-a636-481f70ceba58" >
+		<logger level="INFO" doc:name="Logger" doc:id="843b268c-a339-48d0-b02a-98b49be080de" message="This is sub flow 2 with payload #[payload]"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="52ff54cf-9ce9-4815-9934-4d0c89411dec" variableName="invoiceMessage"/>
+		<sns:list-subscriptions-by-topic doc:name="List subscriptions by topic" doc:id="eca9aa4a-9d90-4827-93a1-b7faad48154d" config-ref="Amazon_SNS_configuration" arn="${topicArn}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="6ea4fae9-0633-4924-a1fc-f44fbfb93924" message="Getting the list of subscriptions with payload #[payload]"/>
+		<set-variable value='#[payload filter ((item, index) -&gt; item.endpoint == "abc@yopmail.com")]' doc:name="Set Variable" doc:id="75e7c406-5949-4d33-bb41-4d0c2334889d" variableName="endPoint"/>
+		<choice doc:name="Choice for checking subscriptions" doc:id="9352feef-b8b7-419b-ab09-50d138918256" tracking:enable-default-events="true">
+			<when doc:id="9c70ea48-d522-4e3a-b024-8ad54f0fa8fc" expression='#[isEmpty(vars.endPoint)]'>
+				<sns:subscribe doc:name="Subscribe" doc:id="0c9126fd-b48a-42b2-908a-1df3dd588f06" config-ref="Amazon_SNS_configuration" topicArn="${topicArn}" protocol="EMAIL" endpoint="abc@yopmail.com"/>
+				<logger level="INFO" doc:name="Logger" doc:id="d6b6428a-8c97-4893-9d61-a1e47f02d952" message="after subscribe: payload is #[payload] #[vars.endPoint]"/>
+			</when>
+			<otherwise >
+				<set-variable value='#[(payload filter ((item, index) -&gt; item.endpoint == "abc@yopmail.com")).payload.subscriptionArn[0]]' doc:name="Set Variable" doc:id="1a6f6222-0162-4414-9df7-d31d7d8ab026" variableName="subsArn"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="a4a34f37-3031-4386-b430-72aabb82a42b" message="Order Id is: #[vars.invoiceMessage.orderId]"/>
+		<sns:publish doc:name="Publish" doc:id="9d93b14a-9833-4978-88c6-53cace9af90b" config-ref="Amazon_SNS_configuration" topicArn="arn:aws:sns:ap-south-1:373255439821:Order-Ecommerce-Mule-ap-south" subject="Invoice Message" messageStructure="json" targetArn="#[vars.subsArn]">
+			<sns:message ><![CDATA[#[{
+	"orderId": vars.invoiceMessage.orderId,
+	"customerId": vars.invoiceMessage.customerId,
+	"totalAmount": vars.invoiceMessage.totalAmount,
+	"finalBill": vars.invoiceMessage.finalAmount,
+	"savedMoney": vars.invoiceMessage.saved
+}]]]></sns:message>
+		</sns:publish>
+	</sub-flow>
+</mule>

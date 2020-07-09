@@ -1,0 +1,33 @@
+{
+  "headers": {
+    "host": "localhost:8081",
+    "connection": "keep-alive",
+    "content-length": "609",
+    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
+    "content-type": "application/json",
+    "accept": "*/*",
+    "origin": "http://localhost:8081",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-dest": "empty",
+    "referer": "http://localhost:8081/api/v1/console/",
+    "accept-encoding": "gzip, deflate, br",
+    "accept-language": "en-US,en;q=0.9"
+  },
+  "clientCertificate": null,
+  "method": "POST",
+  "scheme": "http",
+  "queryParams": {},
+  "requestUri": "/api/v1/order",
+  "queryString": "",
+  "version": "HTTP/1.1",
+  "maskedRequestPath": "/order",
+  "listenerPath": "/api/v1/*",
+  "relativePath": "/order",
+  "localAddress": "/127.0.0.1:8081",
+  "uriParams": {},
+  "rawRequestUri": "/api/v1/order",
+  "rawRequestPath": "/api/v1/order",
+  "remoteAddress": "/127.0.0.1:43394",
+  "requestPath": "/api/v1/order"
+}

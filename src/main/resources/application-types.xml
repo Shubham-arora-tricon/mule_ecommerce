@@ -1,0 +1,97 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="orders" format="json">
+      <types:shape format="weave" example="examples/orderExample-1.json"><![CDATA[%dw 2.0
+
+type orders = {|
+  orderId: String, 
+  customerId: String, 
+  date: String, 
+  orderLineItems: Array<{|    sellerId: String,     productId: String,     qty: Number {"typeId": "int"},     unitPrice: Number {"typeId": "double"}  |}>
+|} {"example": "{\\\"orderId\\\":\\\"4ASD\\\",\\\"customerId\\\":\\\"1qwerty\\\",\\\"date\\\":\\\"24-03-2019\\\",\\\"orderLineItems\\\":[{\\\"sellerId\\\":\\\"1\\\",\\\"productId\\\":\\\"120\\\",\\\"qty\\\":100,\\\"unitPrice\\\":1.035},{\\\"sellerId\\\":\\\"1\\\",\\\"productId\\\":\\\"121\\\",\\\"qty\\\":2,\\\"unitPrice\\\":109},{\\\"sellerId\\\":\\\"1\\\",\\\"productId\\\":\\\"122\\\",\\\"qty\\\":8,\\\"unitPrice\\\":10.7},{\\\"sellerId\\\":\\\"1\\\",\\\"productId\\\":\\\"124\\\",\\\"qty\\\":4,\\\"unitPrice\\\":20},{\\\"sellerId\\\":\\\"1\\\",\\\"productId\\\":\\\"125\\\",\\\"qty\\\":1,\\\"unitPrice\\\":100}]}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="invoice" format="java">
+      <types:shape format="raml"><![CDATA[#%RAML 1.0 DataType
+type: object
+properties:
+  orderId:
+    type: string
+  customerId:
+    type: string
+  totalAmount:
+    type: number
+  discount:
+    type: number
+  tax:
+    type: number
+  total1:
+    type: number
+  finalAmount:
+    type: number
+  saved :
+    type: number]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#e7c01fc4-cb59-4611-9471-e35f89afd94e">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="orders"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#dc1933ef-a732-4c1c-ba5f-d2161e0e13f7">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="orders"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#48954e55-0b77-409a-978a-7ad04d5675bb">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="orders"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#246601fb-4605-4cfa-b341-582796122618">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="orders"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#9c1bcd9b-2690-45fb-ae05-4b9d4d169f3b">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="orders"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#843b268c-a339-48d0-b02a-98b49be080de">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="invoice"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="invoice"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

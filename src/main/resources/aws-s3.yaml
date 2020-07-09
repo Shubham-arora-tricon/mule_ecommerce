@@ -1,0 +1,6 @@
+{
+  "bucket": "spring-boot-lambda-8989",
+  "tax": "18",
+  "discount": "18",
+  "topicArn": "arn:aws:sns:ap-south-1:373255439821:Order-Ecommerce-Mule-ap-south"
+}

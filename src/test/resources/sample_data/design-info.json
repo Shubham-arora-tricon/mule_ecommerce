@@ -1,0 +1,10 @@
+{
+  "sampleData": {
+    "8764a59c-89ec-43b2-9d3c-ce188e736958": {
+      "payload": "sample_data/s3objectsummary.dwl"
+    },
+    "9c70ea48-d522-4e3a-b024-8ad54f0fa8fc": {
+      "payload": "sample_data/list_message.dwl"
+    }
+  }
+}

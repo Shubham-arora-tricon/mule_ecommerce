@@ -1,0 +1,14 @@
+#%RAML 1.0 Library
+
+usage: For the List of orders
+
+types:
+  orderLineItems:
+    type: !include Data Types/orderLineItem.raml
+  order: 
+    type: !include Data Types/orders.raml
+    properties:
+      orderLineItems:
+        type: orderLineItems[]
+        required: true
+      

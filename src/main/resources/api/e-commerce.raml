@@ -1,0 +1,27 @@
+#%RAML 1.0
+title: E-commerce
+baseUri: tricon.ecommerce/api
+version: v1
+
+uses:
+  orders: Library/orderList.raml
+  orderExample: !include Example/orderListExample.raml
+
+resourceTypes:
+  orderList:
+    post:
+      description: This <<resourcePathName>> is to be sent to s3 bucket.
+      body:
+        application/json:
+          type: orders.order
+          example: !include Example/orderListExample.raml
+      responses:
+        200:
+          body:
+            application/json:
+              type: string
+              example: |
+                { "message": "The <<resourcePathName|!singularize>> has been properly entered" }
+
+/order:
+  type: orderList
